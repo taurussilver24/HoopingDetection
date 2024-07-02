@@ -1,5 +1,4 @@
 from ultralytics import YOLO
-from ultralytics.models.yolo import detect, classify, segment
 
 # If Ensemble is no longer available, comment it out or find the new equivalent
 # from ultralytics.nn.modules import Ensemble

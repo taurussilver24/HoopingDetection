@@ -1,5 +1,5 @@
 from ultralytics import YOLO
-from ultralytics.models.yolo import detect, classify, segment
+import torch
 
 # If Ensemble is no longer available, comment it out or find the new equivalent
 # from ultralytics.nn.modules import Ensemble
@@ -15,8 +15,9 @@ if __name__ == "__main__":
     # 4. Run this
     # 5. Go to runs/detect/train/weights and use best.pt as the model while running shot_detector.py
 
-    # Load a model
+    # Load a model# Set to your desired GPU number
     model = YOLO('Yolo-Weights/yolov8n.pt')
+    print(torch.cuda.is_available())
 
     # Train the model
     results = model.train(data='config.yaml', epochs=100, imgsz=640)

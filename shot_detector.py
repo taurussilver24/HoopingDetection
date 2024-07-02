@@ -1,5 +1,3 @@
-# Avi Shah - Basketball Shot Detector/Tracker - July 2023
-
 from ultralytics import YOLO
 import cv2
 import cvzone
@@ -11,14 +9,14 @@ from utils import score, detect_down, detect_up, in_hoop_region, clean_hoop_pos,
 class ShotDetector:
     def __init__(self):
         # Load the YOLO model created from main.py - change text to your relative path
-        self.model = YOLO("Yolo-Weights/bball_model.pt")
-        self.class_names = ['Basketball', 'Basketball Hoop']
+        self.model = YOLO("Yolo-Weights/best1.pt")
+        self.class_names = ['Ball', 'Ring']
 
         # Uncomment line below to use webcam (I streamed to my iPhone using Iriun Webcam)
         # self.cap = cv2.VideoCapture(0)
 
         # Use video - replace text with your video path
-        self.cap = cv2.VideoCapture("aightcropped.mp4")
+        self.cap = cv2.VideoCapture("HoopVids/aightcropped.mp4")
 
         self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
         self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
@@ -66,23 +64,35 @@ class ShotDetector:
                     # Confidence
                     conf = math.ceil((box.conf[0] * 100)) / 100
 
-                    # Class Name
-                    cls = int(box.cls[0])
-                    print(f"Detected class indices: {cls}")
-                    print(f"Class names length: {len(self.class_names)}")
-                    current_class = self.class_names[cls]
+                    # Only proceed if confidence is greater than 0.75
+                    if conf > 0.75:
+                        # Class Name
+                        cls = int(box.cls[0])
+                        current_class = self.class_names[cls]
 
-                    center = (int(x1 + w / 2), int(y1 + h / 2))
+                        center = (int(x1 + w / 2), int(y1 + h / 2))
 
-                    # Only create ball points if high confidence or near hoop
-                    if (conf > .3 or (in_hoop_region(center, self.hoop_pos) and conf > 0.15)) and current_class == "Basketball":
-                        self.ball_pos.append((center, self.frame_count, w, h, conf))
-                        cvzone.cornerRect(self.frame, (x1, y1, w, h))
+                        # Define colors for different classes
+                        if current_class == "Basketball":
+                            color = (0, 0, 255)  # Red for basketball
+                        else:
+                            color = (255, 0, 0)  # Blue for hoop
 
-                    # Create hoop points if high confidence
-                    if conf > .5 and current_class == "Basketball Hoop":
-                        self.hoop_pos.append((center, self.frame_count, w, h, conf))
-                        cvzone.cornerRect(self.frame, (x1, y1, w, h))
+                        # Draw bounding box and label
+                        cv2.rectangle(self.frame, (x1, y1), (x2, y2), color, 2)
+                        label = f"{current_class} {conf:.2f}"
+                        cv2.putText(self.frame, label, (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
+
+                        # Only create ball points if high confidence or near hoop
+                        if (current_class == "Basketball" and conf > 0.75) or \
+                                (in_hoop_region(center, self.hoop_pos) and conf > 0.15):
+                            self.ball_pos.append((center, self.frame_count, w, h, conf))
+                            cvzone.cornerRect(self.frame, (x1, y1, w, h))
+
+                        # Create hoop points if high confidence
+                        if current_class == "Basketball Hoop" and conf > 0.75:
+                            self.hoop_pos.append((center, self.frame_count, w, h, conf))
+                            cvzone.cornerRect(self.frame, (x1, y1, w, h))
 
             self.clean_motion()
             self.shot_detection()
@@ -99,12 +109,10 @@ class ShotDetector:
         cv2.destroyAllWindows()
 
     def clean_motion(self):
-        # Clean and display ball motion
+        # Clean the ball position data but do not draw circles
         self.ball_pos = clean_ball_pos(self.ball_pos, self.frame_count)
-        for i in range(0, len(self.ball_pos)):
-            cv2.circle(self.frame, self.ball_pos[i][0], 2, (0, 0, 255), 2)
 
-        # Clean hoop motion and display current hoop center
+        # Clean the hoop position data and display the current hoop center
         if len(self.hoop_pos) > 1:
             self.hoop_pos = clean_hoop_pos(self.hoop_pos)
             cv2.circle(self.frame, self.hoop_pos[-1][0], 2, (128, 128, 0), 2)
@@ -155,4 +163,3 @@ class ShotDetector:
 
 if __name__ == "__main__":
     ShotDetector()
-
