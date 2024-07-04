@@ -1,13 +1,9 @@
-train: path2/train/images
-val: path2/valid/images
-test: path2/test/images
+train: YOLOBallOnly1/train/images
+val: YOLOBallOnly1/valid/images
+test: YOLOBallOnly1/test/images
+
+# replace '...' with your local absolute paths
+# download the dataset used here: https://universe.roboflow.com/034-ganesh-kumar-m-v-cs-r2lwe/basketball-lhqoe/dataset/1
 
 nc: 2
-names: ['Basketball Hoop', 'Basketball']
-
-roboflow:
-  workspace: 034-ganesh-kumar-m-v-cs-r2lwe
-  project: basketball-lhqoe
-  version: 1
-  license: CC BY 4.0
-  url: https://universe.roboflow.com/034-ganesh-kumar-m-v-cs-r2lwe/basketball-lhqoe/dataset/1
+names: ['basketball', 'sports ball']
