@@ -3,23 +3,22 @@ import cv2
 import cvzone
 import math
 import numpy as np
+import csv
 from utils import score, detect_down, detect_up, in_hoop_region, clean_hoop_pos, clean_ball_pos
-
 
 class ShotDetector:
     def __init__(self):
         # Load the YOLO model created from main.py - change text to your relative path
-        self.model = YOLO("Yolo-Weights/best1.pt")
+        self.model = YOLO("Yolo-Weights/best6.pt")
         self.class_names = ['Ball', 'Hoop']
 
-        # Uncomment line below to use webcam (I streamed to my iPhone using Iriun Webcam)
-        # self.cap = cv2.VideoCapture(0)
-
         # Use video - replace text with your video path
-        self.cap = cv2.VideoCapture("HoopVids/vv2.mp4")
+        self.cap = cv2.VideoCapture("DNvsTW.mp4")
 
         self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
         self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
+        self.total_frames = int(self.cap.get(cv2.CAP_PROP_FRAME_COUNT))
+        self.fps = self.cap.get(cv2.CAP_PROP_FPS)  # Frames per second
 
         self.ball_pos = []  # array of tuples ((x_pos, y_pos), frame count, width, height, conf)
         self.hoop_pos = []  # array of tuples ((x_pos, y_pos), frame count, width, height, conf)
@@ -41,7 +40,20 @@ class ShotDetector:
         self.fade_counter = 0
         self.overlay_color = (0, 0, 0)
 
+        # Open CSV file in write mode and write header
+        self.csv_file = open('shot_results.csv', mode='w', newline='')
+        self.csv_writer = csv.writer(self.csv_file)
+        self.csv_writer.writerow(["Shot Taken", "Result", "Ball Coordinates", "Hoop Coordinates", "Current Score", "Video Timing (seconds)"])
+
+        # Create window for displaying video and slider
+        cv2.namedWindow('Frame')
+        cv2.createTrackbar('Frame', 'Frame', 0, self.total_frames - 1, self.on_trackbar_change)
+
         self.run()
+
+    def on_trackbar_change(self, pos):
+        self.cap.set(cv2.CAP_PROP_POS_FRAMES, pos)
+        self.frame_count = pos
 
     def run(self):
         while True:
@@ -84,20 +96,22 @@ class ShotDetector:
                         cv2.putText(self.frame, label, (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
 
                         # Only create ball points if high confidence or near hoop
-                        if (current_class == "Ball" and conf > 0.75) or \
+                        if (current_class == "Ball" and conf > 0.3) or \
                                 (in_hoop_region(center, self.hoop_pos) and conf > 0.15):
                             self.ball_pos.append((center, self.frame_count, w, h, conf))
                             cvzone.cornerRect(self.frame, (x1, y1, w, h))
 
                         # Create hoop points if high confidence
-                        if current_class == "Hoop" and conf > 0.75:
+                        if current_class == "Hoop" and conf > 0.3:
                             self.hoop_pos.append((center, self.frame_count, w, h, conf))
                             cvzone.cornerRect(self.frame, (x1, y1, w, h))
 
             self.clean_motion()
             self.shot_detection()
-            self.display_score()
             self.frame_count += 1
+
+            # Update video slider position
+            cv2.setTrackbarPos('Frame', 'Frame', self.frame_count)
 
             cv2.imshow('Frame', self.frame)
 
@@ -107,6 +121,7 @@ class ShotDetector:
 
         self.cap.release()
         cv2.destroyAllWindows()
+        self.csv_file.close()
 
     def clean_motion(self):
         # Clean the ball position data but do not draw circles
@@ -142,11 +157,19 @@ class ShotDetector:
                         self.makes += 1
                         self.overlay_color = (0, 255, 0)
                         self.fade_counter = self.fade_frames
-
+                        result = "Successful"
                     # If it is a miss, put a red overlay
                     else:
                         self.overlay_color = (0, 0, 255)
                         self.fade_counter = self.fade_frames
+                        result = "Failed"
+
+                    # Record the result and video timing (in seconds)
+                    ball_center = self.ball_pos[-1][0]
+                    hoop_center = self.hoop_pos[-1][0]
+                    current_score = f"{self.makes} / {self.attempts}"
+                    video_timing_seconds = self.frame_count / self.fps
+                    self.csv_writer.writerow([self.attempts, result, ball_center, hoop_center, current_score, video_timing_seconds])
 
     def display_score(self):
         # Add text
@@ -163,3 +186,4 @@ class ShotDetector:
 
 if __name__ == "__main__":
     ShotDetector()
+
