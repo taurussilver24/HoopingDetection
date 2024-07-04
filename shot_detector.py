@@ -10,13 +10,13 @@ class ShotDetector:
     def __init__(self):
         # Load the YOLO model created from main.py - change text to your relative path
         self.model = YOLO("Yolo-Weights/best1.pt")
-        self.class_names = ['Ball', 'Ring']
+        self.class_names = ['Ball', 'Hoop']
 
         # Uncomment line below to use webcam (I streamed to my iPhone using Iriun Webcam)
         # self.cap = cv2.VideoCapture(0)
 
         # Use video - replace text with your video path
-        self.cap = cv2.VideoCapture("HoopVids/aightcropped.mp4")
+        self.cap = cv2.VideoCapture("HoopVids/vv2.mp4")
 
         self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
         self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
@@ -73,8 +73,8 @@ class ShotDetector:
                         center = (int(x1 + w / 2), int(y1 + h / 2))
 
                         # Define colors for different classes
-                        if current_class == "Basketball":
-                            color = (0, 0, 255)  # Red for basketball
+                        if current_class == "Ball":
+                            color = (0, 0, 255)  # Red for Ball
                         else:
                             color = (255, 0, 0)  # Blue for hoop
 
@@ -84,13 +84,13 @@ class ShotDetector:
                         cv2.putText(self.frame, label, (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
 
                         # Only create ball points if high confidence or near hoop
-                        if (current_class == "Basketball" and conf > 0.75) or \
+                        if (current_class == "Ball" and conf > 0.75) or \
                                 (in_hoop_region(center, self.hoop_pos) and conf > 0.15):
                             self.ball_pos.append((center, self.frame_count, w, h, conf))
                             cvzone.cornerRect(self.frame, (x1, y1, w, h))
 
                         # Create hoop points if high confidence
-                        if current_class == "Basketball Hoop" and conf > 0.75:
+                        if current_class == "Hoop" and conf > 0.75:
                             self.hoop_pos.append((center, self.frame_count, w, h, conf))
                             cvzone.cornerRect(self.frame, (x1, y1, w, h))
 
