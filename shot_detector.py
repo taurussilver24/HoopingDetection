@@ -6,6 +6,7 @@ import numpy as np
 import csv
 from utils import score, detect_down, detect_up, in_hoop_region, clean_hoop_pos, clean_ball_pos
 
+
 class ShotDetector:
     def __init__(self, model_path, video_path):
         # main.pyから作成されたYOLOモデルをロード - 相対パスに変更
@@ -43,7 +44,8 @@ class ShotDetector:
         # CSVファイルをライトモードで開き、ヘッダーを書き込む
         self.csv_file = open('shot_results.csv', mode='w', newline='')
         self.csv_writer = csv.writer(self.csv_file)
-        self.csv_writer.writerow(["Shot Taken", "Result", "Ball Coordinates", "Hoop Coordinates", "Current Score", "Video Timing (seconds)"])
+        self.csv_writer.writerow(["Shot Taken", "Result", "Ball Coordinates",
+                                  "Hoop Coordinates", "Current Score", "Video Timing (seconds)"])
 
         # ビデオの総時間を秒で計算
         self.total_time_seconds = self.total_frames / self.fps
@@ -97,8 +99,20 @@ class ShotDetector:
                             color = (255, 0, 0)  # フープの青
 
                         # バウンディングボックスとラベルを描画
-                        cv2.rectangle(self.frame, (x1, y1), (x2, y2), color, 2)
+                        cv2.rectangle(self.frame, (x1, y1), (x2, y2), color, 1)
                         label = f"{current_class} {conf:.2f}"
+
+                        # テキストサイズの判定
+                        (text_width, text_height), baseline = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, 0.5, 2)
+
+                        # レクタングルの座標
+                        rect_x1 = x1
+                        rect_y1 = y1 - text_height - 10  # Adjust this value if the text is not placed correctly
+                        rect_x2 = x1 + text_width
+                        rect_y2 = y1
+
+                        # レクタングルを描く
+                        cv2.rectangle(self.frame, (rect_x1, rect_y1), (rect_x2, rect_y2), (255, 255, 255), cv2.FILLED)
                         cv2.putText(self.frame, label, (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
 
                         # 高信頼度またはフープ近くの場合にのみボールポイントを作成
@@ -176,7 +190,8 @@ class ShotDetector:
                     hoop_center = self.hoop_pos[-1][0]
                     current_score = f"{self.makes} / {self.attempts}"
                     video_timing_seconds = self.frame_count / self.fps
-                    self.csv_writer.writerow([self.attempts, result, ball_center, hoop_center, current_score, video_timing_seconds])
+                    self.csv_writer.writerow([self.attempts, result, ball_center,
+                                              hoop_center, current_score, video_timing_seconds])
 
     def display_score(self):
         # テキストを追加
@@ -194,9 +209,9 @@ class ShotDetector:
 if __name__ == "__main__":
     import argparse
 
-    parser = argparse.ArgumentParser(description="YOLO Object Detection for Basketball Shot Detection")
-    parser.add_argument('--model', type=str, default="Yolo-Weights/best6.pt", help="Path to the YOLO model")
-    parser.add_argument('--video', type=str, default="HoopVids/DNvsTW.mp4", help="Path to the video file")
+    parser = argparse.ArgumentParser(description="YOLO8を使用し、ボールとリングの検出")
+    parser.add_argument('--model', type=str, default="Yolo-Weights/best6.pt", help="YOLOモデルのパス")
+    parser.add_argument('--video', type=str, default="HoopVids/DNvsTW.mp4", help="動画のパス")
     args = parser.parse_args()
 
-    ShotDetector(model_path="Yolo-Weights/" + args.model, video_path= "HoopVids/"+ args.video)
+    ShotDetector(model_path="Yolo-Weights/" + args.model, video_path="HoopVids/" + args.video)
