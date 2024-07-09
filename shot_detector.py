@@ -7,13 +7,13 @@ import csv
 from utils import score, detect_down, detect_up, in_hoop_region, clean_hoop_pos, clean_ball_pos
 
 class ShotDetector:
-    def __init__(self):
+    def __init__(self, model_path, video_path):
         # Load the YOLO model created from main.py - change text to your relative path
-        self.model = YOLO("Yolo-Weights/best6.pt")
+        self.model = YOLO(model_path)
         self.class_names = ['Ball', 'Hoop']
 
         # Use video - replace text with your video path
-        self.cap = cv2.VideoCapture("DNvsTW.mp4")
+        self.cap = cv2.VideoCapture(video_path)
 
         self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
         self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
@@ -45,15 +45,20 @@ class ShotDetector:
         self.csv_writer = csv.writer(self.csv_file)
         self.csv_writer.writerow(["Shot Taken", "Result", "Ball Coordinates", "Hoop Coordinates", "Current Score", "Video Timing (seconds)"])
 
+        # Calculate total time of the video in seconds
+        self.total_time_seconds = self.total_frames / self.fps
+
         # Create window for displaying video and slider
         cv2.namedWindow('Frame')
-        cv2.createTrackbar('Frame', 'Frame', 0, self.total_frames - 1, self.on_trackbar_change)
+        cv2.createTrackbar('Time (s)', 'Frame', 0, int(self.total_time_seconds), self.on_time_slider_change)
 
         self.run()
 
-    def on_trackbar_change(self, pos):
-        self.cap.set(cv2.CAP_PROP_POS_FRAMES, pos)
-        self.frame_count = pos
+    def on_time_slider_change(self, pos):
+        # Convert time in seconds to frame number
+        frame_number = int(pos * self.fps)
+        self.cap.set(cv2.CAP_PROP_POS_FRAMES, frame_number)
+        self.frame_count = frame_number
 
     def run(self):
         while True:
@@ -110,8 +115,9 @@ class ShotDetector:
             self.shot_detection()
             self.frame_count += 1
 
-            # Update video slider position
-            cv2.setTrackbarPos('Frame', 'Frame', self.frame_count)
+            # Update time slider position
+            current_time_seconds = self.frame_count / self.fps
+            cv2.setTrackbarPos('Time (s)', 'Frame', int(current_time_seconds))
 
             cv2.imshow('Frame', self.frame)
 
@@ -185,5 +191,11 @@ class ShotDetector:
 
 
 if __name__ == "__main__":
-    ShotDetector()
+    import argparse
 
+    parser = argparse.ArgumentParser(description="YOLO Object Detection for Basketball Shot Detection")
+    parser.add_argument('--model', type=str, default="Yolo-Weights/best6.pt", help="Path to the YOLO model")
+    parser.add_argument('--video', type=str, default="HoopVids/DNvsTW.mp4", help="Path to the video file")
+    args = parser.parse_args()
+
+    ShotDetector(model_path="Yolo-Weights/" + args.model, video_path= "HoopVids/"+ args.video)
