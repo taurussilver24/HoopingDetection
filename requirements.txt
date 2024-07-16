@@ -15,3 +15,5 @@ torchvision
 tqdm
 filterpy
 scikit-image
+pandas
+scikit-learn
