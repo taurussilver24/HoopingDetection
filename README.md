@@ -1,52 +1,110 @@
-# Hooping 検出 YOLOv8 と OpenCV
-Author: [Rishit Arora](https://www.linkedin.com/in/-avishah/) (2024)
+## README.md File for YOLOv8 Object Detection Project
 
-[//]: # (Score Detection Accuracy: 95% <br>)
+**Project Overview**
 
-[//]: # (Shot Detection Accuracy: 97% <br>)
+This project utilizes a YOLO object detection model to analyze a Basketball video and identify basketballs and rings. The main components of the project are two Python scripts:
 
-https://github.com/taurussilver24/HoopingDetection
+1. **main.py**: Trains the YOLO model using the `config.yaml` configuration file and saves the best model as `best.pt` in the `runs/weights` directory.
+2. **shot_detector.py**: Detects balls and rings in a video using the trained YOLO model (`Yolo-Weights/best.pt`). It analyzes the ball's trajectory to determine whether it makes or misses a shot, and records the results in a CSV file (`shot_results.csv`).
 
-[//]: # (## Introduction)
+**File Directory Structure**
 
-[//]: # ()
-[//]: # (This project combines the power of Machine Learning and Computer Vision for the purpose of detecting and analyzing basketball shots in real-time! Built upon the latest YOLOv8 &#40;You Only Look Once&#41; machine learning model and the OpenCV library, the program can process video streams from various sources, such as live webcam feed or pre-recorded videos, providing a tool that can be used for an immersive playing experience and enhanced game analytics.)
+```
+root_dir
+├── Yolo-Weights
+│   ├── best.pt
+│   └── best6.pt
+├── config.yaml
+├── HoopVids
+│   ├── DNvsTW.mp4
+└── shot_detector.py
+└── shot_results.csv
+```
 
-[//]: # ()
-[//]: # (## Model Training)
+**Instructions**
 
-[//]: # ()
-[//]: # (The training process utilizes the ultralytics YOLO implementation and a custom dataset specified in the 'config.yaml' file. The model undergoes a set number of training epochs, with the resulting weights of the best-performing model saved for subsequent usage in shot detection. Although this model worked for my usage, a different dataset or training method might work better for your specific project.)
+**1. Training**
 
-[//]: # ()
-[//]: # (## Algorithm)
+**Prerequisites:** Install the required libraries listed inside `requirements.txt`.
 
-[//]: # ()
-[//]: # (The core of this project is an algorithm that uses the trained YOLOv8 model to detect basketballs and hoops in each frame. It then analyzes the motion and position of the basketball relative to the hoop to determine if a shot has been made.)
+**Run:** `python main.py`
 
-[//]: # ()
-[//]: # (To enhance the accuracy of the shot detection, the algorithm not only tracks the ball's position over time but also applies data-cleaning techniques to both the ball and hoop positions. The algorithm is designed to filter out inaccurate data points, remove points beyond a certain frame limit and prevent jumping from one object to another to maintain the accuracy of the detection.)
+**2. Shot Detection**
 
-[//]: # ()
-[//]: # (A linear regression is used to predict the ball's trajectory based on its positions. If the projected trajectory intersects with the hoop, the algorithm registers it as a successful shot.)
+**Prerequisites:** Install the required libraries listed inside `requirements.txt`.
 
-[//]: # ()
-[//]: # (## How to Use This Code)
+**Run:** `python shot_detector.py --model Yolo-Weights/best1.pt --video HoopVids/DNvsTW.mp4`
 
-[//]: # ()
-[//]: # (1. Clone this repository to your local machine.)
+**Replace `best1.pt` and `DNvsTW.mp4` with your desired model and video paths, respectively.**
 
-[//]: # (2. Download the dataset specified in 'config.yaml' and adjust the paths in the configuration file to match your local setup.)
+**Additional Notes**
 
-[//]: # (3. Follow the instructions in 'main.py' to train the model and prepare for shot detection.)
+- The `config.yaml` file contains the training configuration parameters for the YOLO model.
+- The `shot_detector.py` script includes functions for:
+    - Loading the YOLO model
+    - Processing video frames
+    - Detecting objects (balls and rings)
+    - Determining shot attempts and makes/misses
+    - Saving results to a CSV file
 
-[//]: # (4. Run 'shot_detector.py' through your webcam or iPhone for real-time shot detection. Or input a video for shot detection analysis.)
+**Further Development**
 
-[//]: # ()
-[//]: # (Please ensure you have the required Python packages installed, including OpenCV, numpy, and ultralytics' YOLO. Contributions to this project are welcome - submit a pull request. For issues or suggestions, open an issue in this repository.)
+The current model result is not even close to the ideal results, so the utmost priority is to find the suitable training material, and keep on fine tuning the best model.
 
-[//]: # ()
-[//]: # (## Disclaimer)
+**References**
 
-[//]: # ()
-[//]: # (The model's performance can vary based on factors such as the quality of the video feed, lighting conditions, and the clarity of the basketball and hoop in the video. Furthermore, this program will **not** work if multiple basketballs and hoops are in frame. For testing, this program had input videos that were shot outdoors from a phone camera on the ground.)
+- [YOLO Object Detection](https://pjreddie.com/darknet/yolov1/)
+- [PyTorch](https://pytorch.org/)
+- [Cv2](https://opencv.org/)
+
+**Original GitHub Project:** [https://github.com/github](https://github.com/avishah3/AI-Basketball-Shot-Detection-Tracker)
+
+**日本語版**
+
+## YOLOv8オブジェクト検出プロジェクトのREADME
+
+**プロジェクト概要**
+
+このプロジェクトは、YOLOオブジェクト検出モデルを使用してバスケットボールのビデオを分析し、バスケットボールとリングを検出します。プロジェクトの主要なコンポーネントは、以下の2つのPythonスクリプトです。
+
+1. **main.py**: `config.yaml` 設定ファイルを使用して YOLO モデルをトレーニングし、最良のモデルを `runs/weights` ディレクトリに `best.pt` として保存します。
+2. **shot_detector.py**: トレーニング済みの YOLO モデル (`Yolo-Weights/best.pt`) を使用して、ビデオ内のバスケットボールとリングを検出します。ボールの軌跡を分析してシュート成功/失敗を判定し、結果を CSV ファイル (`shot_results.csv`) に記録します。
+
+**ファイルディレクトリ構成**
+
+```
+root_dir
+├── Yolo-Weights
+│   ├── best.pt
+│   └── best6.pt
+├── config.yaml
+├── HoopVids
+│   ├── DNvsTW.mp4
+└── shot_detector.py
+└── shot_results.csv
+```
+
+**実行手順**
+
+**1. トレーニング**
+
+**前提条件:** `requirements.txt` に記載されているライブラリをインストールしてください。
+
+**実行:** `python main.py`
+
+**2. ショット検出**
+
+**前提条件:** `requirements.txt` に記載されているライブラリをインストールしてください。
+
+**実行:** `python shot_detector.py --model Yolo-Weights/best1.pt --video HoopVids/DNvsTW.mp4`
+
+**`best1.pt` と `DNvsTW.mp4` を、ご希望のモデルパスとビデオパスに置き換えてください。**
+
+**補足事項**
+
+- `config.yaml` ファイルには、YOLO モデルのトレーニング設定パラメータが記述されています。
+- `shot_detector.py` スクリプトには、以下の機能が含まれています。
+    - YOLO モデルの読み込み
+    - ビデオフレームの処理
+    - オブジェクト (バスケットボールとリング) の検出
+    - シュート

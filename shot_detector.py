@@ -54,6 +54,7 @@ class ShotDetector:
         self.window_name = "MODEL: " + model_path + "  VIDEO: " + video_path
         cv2.namedWindow(self.window_name)
         cv2.createTrackbar('Time (s)', self.window_name, 0, int(self.total_time_seconds), self.on_time_slider_change)
+        self.paused = False
 
         self.run()
 
@@ -65,11 +66,12 @@ class ShotDetector:
 
     def run(self):
         while True:
-            ret, self.frame = self.cap.read()
+            if not self.paused:
+                ret, self.frame = self.cap.read()
+                if not ret:
+                    # ビデオの終了またはエラーが発生
+                    break
 
-            if not ret:
-                # ビデオの終了またはエラーが発生
-                break
             self.frame = cv2.resize(self.frame, (1280, 720))
             results = self.model(self.frame, stream=True)
 
@@ -137,8 +139,11 @@ class ShotDetector:
             cv2.imshow(self.window_name, self.frame)
 
             # 'q'がクリックされた場合に閉じる
-            if cv2.waitKey(1) & 0xFF == ord('q'):  # waitKeyが高いとビデオが遅くなるので、ウェブカメラには1を使用
+            key = cv2.waitKey(1) & 0xFF
+            if key == ord('q'):
                 break
+            elif key == ord(' '):
+                self.paused = not self.paused
 
         self.cap.release()
         cv2.destroyAllWindows()
