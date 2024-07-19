@@ -1,3 +1,5 @@
+import os
+
 from ultralytics import YOLO
 import cv2
 import cvzone
@@ -8,7 +10,7 @@ from utils import score, detect_down, detect_up, in_hoop_region, clean_hoop_pos,
 
 
 class ShotDetector:
-    def __init__(self, model_path, video_path):
+    def __init__(self, model_path, video_path,video_name):
         # main.pyから作成されたYOLOモデルをロード - 相対パスに変更
         self.model = YOLO(model_path)
         self.class_names = ['Ball', 'Hoop']
@@ -42,7 +44,10 @@ class ShotDetector:
         self.overlay_color = (0, 0, 0)
 
         # CSVファイルをライトモードで開き、ヘッダーを書き込む
-        self.csv_file = open('shot_results.csv', mode='w', newline='')
+        results_dir = 'Results/' + video_name
+        os.makedirs(results_dir, exist_ok=True)
+        self.csv_file = open('Results/' + video_name + '/shot_results.csv', mode='w', newline='')
+
         self.csv_writer = csv.writer(self.csv_file)
         self.csv_writer.writerow(["Shot Taken", "Result", "Ball Coordinates",
                                   "Hoop Coordinates", "Current Score", "Video Timing (seconds)"])
@@ -219,4 +224,4 @@ if __name__ == "__main__":
     parser.add_argument('--video', type=str, default="HoopVids/DNvsTW.mp4", help="動画のパス")
     args = parser.parse_args()
 
-    ShotDetector(model_path="Yolo-Weights/" + args.model, video_path="HoopVids/" + args.video)
+    ShotDetector(model_path="Yolo-Weights/" + args.model, video_path="HoopVids/" + args.video, video_name = args.video)
