@@ -130,9 +130,20 @@ def compute_roc_curve(groundtruth_df, updated_autogen_df):
 
 
 if __name__ == "__main__":
+    import argparse
+
+    parser = argparse.ArgumentParser(description="動画のcsvそれぞれを比較し、ROCカーブ作成")
+    parser.add_argument('--video', '-v', type=str, default="", help="動画のパス")
+    args = parser.parse_args()
+
+    ground_truth_path = 'Results/' + args.video + '/ground_truth.csv'
+    result_path = 'Results/' + args.video + '/auto_gen.csv'
+
+
+
     # Load the data from CSV files
-    groundtruth_df = pd.read_csv('ground_truth.csv')
-    autogen_df = pd.read_csv('auto_gen.csv')
+    groundtruth_df = pd.read_csv(ground_truth_path)
+    autogen_df = pd.read_csv(result_path)
 
     # Update the auto-generated CSV
     updated_autogen_df = update_autogen_csv(groundtruth_df, autogen_df)

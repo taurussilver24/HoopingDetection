@@ -124,9 +124,11 @@ def plot_roc_curve(y_true, y_scores):
     plt.show()
 
 
-def main():
-    ground_truth_path = 'Results/DNvsTW.mp4/shot_results_ground.csv'
-    result_path = 'Results/DNvsTW.mp4/shot_results.csv'
+def main(video_path):
+
+
+    ground_truth_path = 'Results/' + video_path + '/shot_results_ground.csv'
+    result_path = 'Results/' + video_path + '/shot_results.csv'
 
     ground_truth_df = read_csv(ground_truth_path)
     result_df = read_csv(result_path)
@@ -141,4 +143,11 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    import argparse
+
+    parser = argparse.ArgumentParser(description="動画のcsvそれぞれを比較し、ROCカーブ作成")
+    parser.add_argument('--video', '-v', type=str, default="", help="動画のパス")
+    args = parser.parse_args()
+    video_path = args.video
+
+    main(video_path)
