@@ -4,6 +4,14 @@ import matplotlib.pyplot as plt
 import warnings
 import numpy as np
 
+import argparse
+
+parser = argparse.ArgumentParser(description="動画のcsvそれぞれを比較し、ROCカーブ作成")
+parser.add_argument('--video', '-v', type=str, default="", help="動画のパス")
+args = parser.parse_args()
+
+ground_truth_path = 'Results/' + args.video + '/ground_truth.csv'
+result_path = 'Results/' + args.video + '/auto_gen.csv'
 
 def find_closest_match(gt_time, auto_times, tolerance=0.15):
     """Find the closest match for a given ground truth time within a specified tolerance."""
@@ -17,7 +25,7 @@ def find_closest_match(gt_time, auto_times, tolerance=0.15):
     return closest_time
 
 
-def update_autogen_csv(groundtruth_df, autogen_df, output_file='updated_autogencsv.csv'):
+def update_autogen_csv(groundtruth_df, autogen_df, output_file="Results/" + args.video + "updated_auto_gen.csv"):
     """Update the auto-generated CSV to include missed entries from the ground truth."""
     # Create a new DataFrame to hold the updated auto-generated entries
     updated_autogen_df = autogen_df.copy()
@@ -130,14 +138,7 @@ def compute_roc_curve(groundtruth_df, updated_autogen_df):
 
 
 if __name__ == "__main__":
-    import argparse
 
-    parser = argparse.ArgumentParser(description="動画のcsvそれぞれを比較し、ROCカーブ作成")
-    parser.add_argument('--video', '-v', type=str, default="", help="動画のパス")
-    args = parser.parse_args()
-
-    ground_truth_path = 'Results/' + args.video + '/ground_truth.csv'
-    result_path = 'Results/' + args.video + '/auto_gen.csv'
 
 
 
