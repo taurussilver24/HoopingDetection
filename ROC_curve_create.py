@@ -4,6 +4,13 @@ import matplotlib.pyplot as plt
 from sklearn.metrics import roc_curve, auc
 import os
 
+import argparse
+
+#Global変数
+parser = argparse.ArgumentParser(description="動画のcsvそれぞれを比較し、ROCカーブ作成")
+parser.add_argument('--video', '-v', type=str, default="", help="動画のパス")
+args = parser.parse_args()
+video_path = args.video
 
 def read_csv(file_path):
     """Read CSV file into a DataFrame"""
@@ -49,7 +56,7 @@ def handle_missed_entries(ground_truth_df, result_df, tolerance=0.1):
     if new_rows:
         new_entries_df = pd.DataFrame(new_rows)
         updated_result_df = pd.concat([result_df, new_entries_df], ignore_index=True)
-        updated_result_df.to_csv('updated_result.csv', index=False)
+        updated_result_df.to_csv("Results/"+ video_path + '/updated_result.csv', index=False)
     else:
         updated_result_df = result_df.copy()
 
@@ -143,11 +150,6 @@ def main(video_path):
 
 
 if __name__ == "__main__":
-    import argparse
 
-    parser = argparse.ArgumentParser(description="動画のcsvそれぞれを比較し、ROCカーブ作成")
-    parser.add_argument('--video', '-v', type=str, default="", help="動画のパス")
-    args = parser.parse_args()
-    video_path = args.video
 
     main(video_path)
