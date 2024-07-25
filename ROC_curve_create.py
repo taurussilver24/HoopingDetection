@@ -23,7 +23,7 @@ def ensure_directory_exists(directory):
         os.makedirs(directory)
 
 
-def match_entries(ground_truth_df, result_df, tolerance=0.1):
+def match_entries(ground_truth_df, result_df, tolerance=2):
     """Match entries based on video timing with a given tolerance"""
     matches = []
     for _, gt_row in ground_truth_df.iterrows():
@@ -134,8 +134,8 @@ def plot_roc_curve(y_true, y_scores):
 def main(video_path):
 
 
-    ground_truth_path = 'Results/' + video_path + '/shot_results_ground.csv'
-    result_path = 'Results/' + video_path + '/shot_results.csv'
+    ground_truth_path = 'Results/' + video_path + '/shot_results_ground(120s).csv'
+    result_path = 'Results/' + video_path + '/shot_results(120s).csv'
 
     ground_truth_df = read_csv(ground_truth_path)
     result_df = read_csv(result_path)
