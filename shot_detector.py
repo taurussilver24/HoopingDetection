@@ -1,5 +1,4 @@
 import os
-
 from ultralytics import YOLO
 import cv2
 import cvzone
@@ -8,16 +7,14 @@ import numpy as np
 import csv
 from utils import score, detect_down, detect_up, in_hoop_region, clean_hoop_pos, clean_ball_pos
 
-
 class ShotDetector:
-    def __init__(self, model_path, video_path,video_name):
+    def __init__(self, model_path, video_path, video_name):
         # main.pyから作成されたYOLOモデルをロード - 相対パスに変更
         self.model = YOLO(model_path)
         self.class_names = ['Ball', 'Hoop']
 
         # ビデオを使用 - テキストをビデオパスに置き換え
         self.cap = cv2.VideoCapture(video_path)
-
         self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
         self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
         self.total_frames = int(self.cap.get(cv2.CAP_PROP_FRAME_COUNT))
@@ -35,6 +32,7 @@ class ShotDetector:
         # ショットを検出するために使用（上部および下部の領域）
         self.up = False
         self.down = False
+        self.peak = False
         self.up_frame = 0
         self.down_frame = 0
 
@@ -46,8 +44,7 @@ class ShotDetector:
         # CSVファイルをライトモードで開き、ヘッダーを書き込む
         results_dir = 'Results/' + video_name
         os.makedirs(results_dir, exist_ok=True)
-        self.csv_file = open('Results/' + video_name + '/shot_results.csv', mode='w', newline='')
-
+        self.csv_file = open(results_dir + '/shot_results.csv', mode='w', newline='')
         self.csv_writer = csv.writer(self.csv_file)
         self.csv_writer.writerow(["Shot Taken", "Result", "Ball Coordinates",
                                   "Hoop Coordinates", "Current Score", "Video Timing (seconds)"])
@@ -114,7 +111,7 @@ class ShotDetector:
 
                         # レクタングルの座標
                         rect_x1 = x1
-                        rect_y1 = y1 - text_height - 10  # Adjust this value if the text is not placed correctly
+                        rect_y1 = y1 - text_height - 10  # テキストが正しく配置されていない場合はこの値を調整
                         rect_x2 = x1 + text_width
                         rect_y2 = y1
 
@@ -123,13 +120,13 @@ class ShotDetector:
                         cv2.putText(self.frame, label, (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
 
                         # 高信頼度またはフープ近くの場合にのみボールポイントを作成
-                        if (current_class == "Ball" and conf > 0.7) or \
+                        if (current_class == "Ball" and conf > 0.3) or \
                                 (in_hoop_region(center, self.hoop_pos) and conf > 0.15):
                             self.ball_pos.append((center, self.frame_count, w, h, conf))
                             cvzone.cornerRect(self.frame, (x1, y1, w, h))
 
                         # 高信頼度の場合にフープポイントを作成
-                        if current_class == "Hoop" and conf > 0.7:
+                        if current_class == "Hoop" and conf > 0.3:
                             self.hoop_pos.append((center, self.frame_count, w, h, conf))
                             cvzone.cornerRect(self.frame, (x1, y1, w, h))
 
@@ -159,49 +156,62 @@ class ShotDetector:
         self.ball_pos = clean_ball_pos(self.ball_pos, self.frame_count)
 
         # フープ位置データをクリーンアップし、現在のフープ中心を表示
-        if len(self.hoop_pos) > 1:
+        if len(self.hoop_pos) > 0:
             self.hoop_pos = clean_hoop_pos(self.hoop_pos)
             cv2.circle(self.frame, self.hoop_pos[-1][0], 2, (128, 128, 0), 2)
 
+    def detect_peak(self, ball_pos):
+        # ボールの軌道のピークを検出する関数
+        if len(ball_pos) < 3:
+            return False
+        # ボールの現在位置が前後の位置よりも高い場合にピークとする
+        return ball_pos[-2][0][1] > ball_pos[-3][0][1] and ball_pos[-2][0][1] > ball_pos[-1][0][1]
+
     def shot_detection(self):
         if len(self.hoop_pos) > 0 and len(self.ball_pos) > 0:
-            # ボールが 'up' および 'down' 領域にあるか検出 - ボールは 'up' にあった後にのみ 'down' にあることができる
+            # ボールが 'up' 領域にあるか検出
             if not self.up:
                 self.up = detect_up(self.ball_pos, self.hoop_pos)
                 if self.up:
                     self.up_frame = self.ball_pos[-1][1]
 
+            # ボールが 'up' 領域にあり、その後 'down' 領域にあるか検出
             if self.up and not self.down:
                 self.down = detect_down(self.ball_pos, self.hoop_pos)
                 if self.down:
                     self.down_frame = self.ball_pos[-1][1]
 
-            # ボールが 'up' 領域から 'down' 領域にその順序で移動した場合、試みを増やしてリセット
-            if self.frame_count % 10 == 0:
-                if self.up and self.down and self.up_frame < self.down_frame:
-                    self.attempts += 1
-                    self.up = False
-                    self.down = False
+            # ピークの検出（オプション）
+            if self.up and not self.peak:
+                self.peak = self.detect_peak(self.ball_pos)
+                if self.peak:
+                    self.peak_frame = self.ball_pos[-1][1]
 
-                    # メイクの場合、緑のオーバーレイを表示
-                    if score(self.ball_pos, self.hoop_pos):
-                        self.makes += 1
-                        self.overlay_color = (0, 255, 0)
-                        self.fade_counter = self.fade_frames
-                        result = "Successful"
-                    # ミスの場合、赤のオーバーレイを表示
-                    else:
-                        self.overlay_color = (0, 0, 255)
-                        self.fade_counter = self.fade_frames
-                        result = "Failed"
+            # ボールが 'up' 領域から 'down' 領域に移動した場合、ショットとみなす
+            if self.up and self.down and self.up_frame < self.down_frame:
+                self.attempts += 1
+                self.up = False
+                self.down = False
 
-                    # 結果とビデオタイミング（秒単位）を記録
-                    ball_center = self.ball_pos[-1][0]
-                    hoop_center = self.hoop_pos[-1][0]
-                    current_score = f"{self.makes} / {self.attempts}"
-                    video_timing_seconds = self.frame_count / self.fps
-                    self.csv_writer.writerow([self.attempts, result, ball_center,
-                                              hoop_center, current_score, video_timing_seconds])
+                # メイクの場合、緑のオーバーレイを表示
+                if score(self.ball_pos, self.hoop_pos):
+                    self.makes += 1
+                    self.overlay_color = (0, 255, 0)
+                    self.fade_counter = self.fade_frames
+                    result = "Successful"
+                # ミスの場合、赤のオーバーレイを表示
+                else:
+                    self.overlay_color = (0, 0, 255)
+                    self.fade_counter = self.fade_frames
+                    result = "Failed"
+
+                # 結果とビデオタイミング（秒単位）を記録
+                ball_center = self.ball_pos[-1][0]
+                hoop_center = self.hoop_pos[-1][0]
+                current_score = f"{self.makes} / {self.attempts}"
+                video_timing_seconds = self.frame_count / self.fps
+                self.csv_writer.writerow([self.attempts, result, ball_center,
+                                          hoop_center, current_score, video_timing_seconds])
 
     def display_score(self):
         # テキストを追加
@@ -214,7 +224,6 @@ class ShotDetector:
             alpha = 0.2 * (self.fade_counter / self.fade_frames)
             self.frame = cv2.addWeighted(self.frame, 1 - alpha, np.full_like(self.frame, self.overlay_color), alpha, 0)
             self.fade_counter -= 1
-
 
 if __name__ == "__main__":
     import argparse
